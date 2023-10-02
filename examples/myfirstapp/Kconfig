@@ -1,0 +1,25 @@
+
+config EXAMPLES_MYFIRSTAPP
+	tristate "My first app example"
+	default y
+	---help---
+		Enable the myfirstapp app
+
+if EXAMPLES_MYFIRSTAPP
+
+config EXAMPLES_MYFIRSTAPP_PROGNAME
+	string "Program name"
+	default "myfirstapp"
+	---help---
+		This is the name of the program that will be use when the NSH ELF
+		program is installed.
+
+config EXAMPLES_MYFIRSTAPP_PRIORITY
+	int "myfirstapp task priority"
+	default 100
+
+config EXAMPLES_MYFIRSTAPP_STACKSIZE
+	int "myfirstapp stack size"
+	default 2048
+
+endif

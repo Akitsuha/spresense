@@ -182,6 +182,7 @@ int main(int argc, FAR char *argv[])
   /* Stop playing */
 
   printf("Stop player\n");
+  
   mp3->stop();
 
 app_error:

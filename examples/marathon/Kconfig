@@ -1,0 +1,30 @@
+
+config EXAMPLES_MARATHON
+	tristate "Marathon test"
+	default n
+	---help---
+		Enable the marathon app
+
+if EXAMPLES_MARATHON
+
+config EXAMPLES_MARATHON_PROGNAME
+	string "Program name"
+	default "marathon"
+	---help---
+		This is the name of the program that will be use when the NSH ELF
+		program is installed.
+
+config EXAMPLES_MARATHON_PRIORITY
+	int "marathon task priority"
+	default 100
+
+config EXAMPLES_MARATHON_STACKSIZE
+	int "marathon stack size"
+	default 2048
+
+config EXAMPLES_GNSS_DEVNAME
+	string "GNSS device name"
+	default "/dev/gps2" if CXD56_GNSS_ADDON
+	default "/dev/gps"
+
+endif

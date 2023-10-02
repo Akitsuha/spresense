@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"name": "spresense",
+			"path": "."
+		},
+		{
+			"path": "../Documents/あきつは/Project/spresense_test"
+		}
+	],
+	"settings": {
+		"spresense.sdk.path": "/Users/asaikazuki/spresense",
+		"spresense.sdk.tools.path": "/Users/asaikazuki/spresense/sdk/tools",
+		"terminal.integrated.env.osx": {
+			"PATH": "/Users/asaikazuki/spresenseenv/usr/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Frameworks/Python.framework/Versions/3.11/bin:/opt/homebrew/bin"
+		},
+		"spresense.env.toolchain.path": "/Users/asaikazuki/spresenseenv/usr/bin",
+		"cortex-debug.armToolchainPath": "/Users/asaikazuki/spresenseenv/usr/bin",
+		"cortex-debug.openocdPath": "/Users/asaikazuki/spresenseenv/usr/bin/openocd",
+		"spresense.env.extension.path": "/Users/asaikazuki/.vscode/extensions/sony-spresense.spresense-vscode-ide-1.4.101"
+	}
+}

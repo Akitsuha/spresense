@@ -1,3 +1,6 @@
+#ifndef MYGNSS_H
+#define MYGNSS_H
+
 //***************************************************************************
 // gnss.cxx
 // 
@@ -22,7 +25,11 @@
 #include <arch/chip/gnss.h>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <iomanip>
+#include <chrono>
+
+#include "myaudio.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -50,6 +57,7 @@ struct cxd56_gnss_dms_s
  ****************************************************************************/
 
 static uint32_t                         posfixflag;
+static uint32_t                         posfixflag_c;
 static struct cxd56_gnss_positiondata_s posdat;
 
 static void double_to_dmf(double x, struct cxd56_gnss_dms_s * dmf)
@@ -80,14 +88,19 @@ static void double_to_dmf(double x, struct cxd56_gnss_dms_s * dmf)
   dmf->frac   = f;
 }
 
+
 /****************************************************************************
- * Name: read_and_print()
+ * Name: csv_outfile()
  *
  * Description:
- *   Read and print POS data.
+ *   Write latitude, longitude, altitude in a csv file.
  *
  * Input Parameters:
- *   fd - File descriptor.
+ *   std::ofstream ofs - filestream.
+ *   double latitude - latitude.
+ *   double longitude - longitude.
+ *   double altitude - altitude.
+ *   std::string iso_time - ISO standard time.
  *
  * Returned Value:
  *   Zero (OK) on success; Negative value on error.
@@ -97,10 +110,67 @@ static void double_to_dmf(double x, struct cxd56_gnss_dms_s * dmf)
  *
  ****************************************************************************/
 
-static int read_and_print(int fd)
+static int csv_outfile(std::ofstream& ofs, double latitude, double longitude, double altitude, std::string iso_time)
+{
+  ofs << std::fixed << std::setprecision(6) << posdat.receiver.longitude << "," << std::setprecision(6) << posdat.receiver.latitude << "," << "0" << std::endl;
+  return 0;
+}
+
+/****************************************************************************
+ * Name: gpx_outfile()
+ *
+ * Description:
+ *   Write latitude, longitude, altitude in a csv file.
+ *
+ * Input Parameters:
+ *   std::ofstream ofs - filestream.
+ *   double latitude - latitude.
+ *   double longitude - longitude.
+ *   double altitude - altitude.(optional)
+ *   std::string iso_time - ISO standard time.
+ *
+ * Returned Value:
+ *   Zero (OK) on success; Negative value on error.
+ *
+ * Assumptions/Limitations:
+ *   none.
+ *
+ ****************************************************************************/
+
+static int gpx_outfile(std::ofstream& ofs, double latitude, double longitude, double altitude, std::string iso_time)
+{
+  ofs << std::fixed << "<trkpt lat=\"" << std::setprecision(6) << latitude << "\" lon=\"" << std::setprecision(6) << longitude << "\">" << std::endl;
+  ofs << "    <time>" << iso_time << "</time>" << std::endl;  // 時刻（ISO 8601形式）
+  ofs << "</trkpt>" << std::endl;
+
+  return 0;
+}
+
+/****************************************************************************
+ * Name: read_and_print()
+ *
+ * Description:
+ *   Read and print POS data.
+ *
+ * Input Parameters:
+ *   fd - File descriptor.
+ *   std::string data_path - a file path recording position data.
+ *
+ * Returned Value:
+ *   Zero (OK) on success; Negative value on error.
+ *
+ * Assumptions/Limitations:
+ *   none.
+ *
+ ****************************************************************************/
+
+static int read_and_print(int fd, std::string data_path)
 {
   int ret;
   struct cxd56_gnss_dms_s dmf;
+
+  std::stringstream ss;
+  std::string iso_time;
 
   /* Read POS data. */
 
@@ -129,6 +199,17 @@ static int read_and_print(int fd)
          posdat.receiver.time.hour, posdat.receiver.time.minute,
          posdat.receiver.time.sec, posdat.receiver.time.usec);
 
+  ss << std::setw(4) << std::setfill('0') << std::to_string(posdat.receiver.date.year)
+    << "-" << std::setw(2) << std::setfill('0') << std::to_string(posdat.receiver.date.month)
+    << "-" << std::setw(2) << std::setfill('0') << std::to_string(posdat.receiver.date.day)
+    << "T" << std::setw(2) << std::setfill('0') << std::to_string(posdat.receiver.time.hour)
+    << ":" << std::setw(2) << std::setfill('0') << std::to_string(posdat.receiver.time.minute)
+    << ":" << std::setw(2) << std::setfill('0') << std::to_string(posdat.receiver.time.sec);
+
+  iso_time = ss.str();
+
+  std::cout << iso_time << std::endl;
+
   if (posdat.receiver.pos_fixmode != CXD56_GNSS_PVT_POSFIX_INVALID)
     {
       /* 2D fix or 3D fix.
@@ -137,7 +218,7 @@ static int read_and_print(int fd)
       posfixflag = 1;
 
       std::ofstream ofs;
-      ofs.open("/mnt/sd0/route.csv",std::ios::app); //出力ファイルストリーム
+      ofs.open(data_path,std::ios::app); //出力ファイルストリーム
 
       double_to_dmf(posdat.receiver.latitude, &dmf);
       //printf(">LAT %d.%d.%04ld\n", dmf.degree, dmf.minute, dmf.frac);
@@ -145,15 +226,17 @@ static int read_and_print(int fd)
       double_to_dmf(posdat.receiver.longitude, &dmf);
       //printf(">LNG %d.%d.%04ld\n", dmf.degree, dmf.minute, dmf.frac);
 
-      std::cout << std::fixed << std::setprecision(6) << posdat.receiver.longitude << "," << std::setprecision(6) << posdat.receiver.latitude << "," << "0" << std::endl;
+      //std::cout << std::fixed << std::setprecision(6) << posdat.receiver.longitude << "," << std::setprecision(6) << posdat.receiver.latitude << "," << "0" << std::endl;
 
-      ofs << std::fixed << std::setprecision(6) << posdat.receiver.longitude << "," << std::setprecision(6) << posdat.receiver.latitude << "," << "0" << std::endl;
 
+      //ofs << std::fixed << std::setprecision(6) << posdat.receiver.longitude << "," << std::setprecision(6) << posdat.receiver.latitude << "," << "0" << std::endl;
+      gpx_outfile(ofs,posdat.receiver.latitude,posdat.receiver.longitude,0.,iso_time);
       
     }
   else
     {
       /* No measurement. */
+      posfixflag = 0;
 
       printf(">No Positioning Data\n");
     }
@@ -230,14 +313,18 @@ _err:
  *
  ****************************************************************************/
 
-
-extern "C" int marathon_main(int argc, FAR char *argv[])
+extern "C" int mygnss_main()
 {
   int      fd;
   int      ret;
   int      posperiod;
   sigset_t mask;
   struct cxd56_gnss_signal_setting_s setting;
+  std::string data_folder_path = "/mnt/sd0/route";
+  std::string extension = ".gpx";
+  std::string datapath;
+  std::ifstream datafile;
+  int file_count = 0;
 
   std::cout << "Asakura" << std::endl;
 
@@ -247,6 +334,7 @@ extern "C" int marathon_main(int argc, FAR char *argv[])
   if (fd < 0)
     {
       printf("open error:%d,%d\n", fd, errno);
+      
       return -ENODEV;
     }
   
@@ -288,10 +376,13 @@ extern "C" int marathon_main(int argc, FAR char *argv[])
   /* Initial positioning measurement becomes cold start if specified hot
    * start, so working period should be long term to receive ephemeris. */
 
-  posperiod  = 100;
+  posperiod  = 3000;
   posfixflag = 0;
+  posfixflag_c = 0;
 
   /* Start GNSS. */
+
+  myaudio_main("mnt/sd0/audio/helpMe.mp3");
 
   ret = ioctl(fd, CXD56_GNSS_IOCTL_START, CXD56_GNSS_STMOD_HOT);
   if (ret < 0)
@@ -303,6 +394,22 @@ extern "C" int marathon_main(int argc, FAR char *argv[])
     {
       printf("start GNSS OK\n");
     }
+
+  while(file_count < 1000){
+    datapath = data_folder_path + "/route_" + std::to_string(file_count) + extension;
+    datafile = std::ifstream(datapath.c_str());
+
+    if(datafile.is_open()){
+      file_count++;
+      continue;
+    }
+    else{
+      std::cout << "filepath is " << datapath << std::endl;
+      datafile.close();
+      break;
+    }
+  }
+
 
   do
     {
@@ -318,7 +425,7 @@ extern "C" int marathon_main(int argc, FAR char *argv[])
 
       /* Read and print POS data. */
 
-      ret = read_and_print(fd);
+      ret = read_and_print(fd,datapath);
       if (ret < 0)
         {
           break;
@@ -328,12 +435,20 @@ extern "C" int marathon_main(int argc, FAR char *argv[])
         {
           /* Count down started after POS fixed. */
 
+          if(posfixflag_c != posfixflag){
+
+            myaudio_main("mnt/sd0/audio/start_gnss.mp3");
+            posfixflag_c = posfixflag;
+          }
+
           posperiod--;
         }
     }
   while (posperiod > 0);
 
   /* Stop GNSS. */
+
+  myaudio_main("mnt/sd0/audio/error.mp3");
 
   ret = ioctl(fd, CXD56_GNSS_IOCTL_STOP, 0);
   if (ret < 0)
@@ -371,3 +486,5 @@ _err:
   return ret;
 
 }
+
+#endif

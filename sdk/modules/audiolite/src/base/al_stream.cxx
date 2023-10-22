@@ -57,15 +57,20 @@ audiolite_filestream::~audiolite_filestream()
 
 int audiolite_filestream::open_file(const char *fname, const char *flg)
 {
+  int ret = 0;
   mossfw_lock_take(&_lock);
   _fp = fopen(fname, flg);
+  
   if (_fp)
     {
       _self_open = true;
     }
+  else{
+    ret = -1;
+  }
   mossfw_lock_give(&_lock);
 
-  return errno;
+  return ret;
 }
 
 int audiolite_filestream::rfile(const char *fname)

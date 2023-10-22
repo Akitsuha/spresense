@@ -1,7 +1,7 @@
 
 config EXAMPLES_MARATHON
 	tristate "Marathon test"
-	default n
+	default y
 	---help---
 		Enable the marathon app
 
